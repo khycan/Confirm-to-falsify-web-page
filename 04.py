@@ -1,5 +1,8 @@
 ## python 3.4
-
+"""
+페이지에 명시되어 있는
+nothing 파라미터의 값을 추적하는 문제
+"""
 import urllib.request as ur
 import re
 

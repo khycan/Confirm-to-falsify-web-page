@@ -1,5 +1,9 @@
 ## python 3.4
-
+"""
+02번과 비슷하게
+특정 url의 페이지 소스를 열어서
+조건에 맞는 문자열을 추출하는 문제
+"""
 import urllib.request as ur
 import re
 

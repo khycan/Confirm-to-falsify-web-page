@@ -1,5 +1,8 @@
 ## python 3.4
-
+"""
+페이지 source에 들어있는
+특정 문자열을 추출하는 문제
+"""
 import urllib.request as ur
 import re
 
