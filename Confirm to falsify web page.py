@@ -8,6 +8,7 @@ import urllib.parse
 import multiprocessing as mp
 import re
 from datetime import datetime
+import time
 
 def Scan_URL(url, number, log_name, lk):
 
@@ -21,8 +22,17 @@ def Scan_URL(url, number, log_name, lk):
 
     ## try to connect to zerocert and wait untill recieving response
     conn = http.client.HTTPConnection("zerocert.org")
-    conn.request("POST","/tools/sitecheck.html",params,headers)
-    response = conn.getresponse()
+
+    while True:
+        conn.request("POST","/tools/sitecheck.html",params,headers)
+        response = conn.getresponse()
+        ## check omission
+        if response.status == 500:    # 500 에러가 날 경우 request를 다시 보냄 
+            print(response.status, response.reason)
+            time.sleep(2.0)
+        else:
+            break
+    
     data = response.read()
     result_str = data.decode('utf-8','ignore')
 
@@ -33,16 +43,25 @@ def Scan_URL(url, number, log_name, lk):
     result_str = re.sub("<t.*>","",result_str)
     result_str = result_str.replace("Latest detected Domain","")
 
-    # lock을 건다
-    lk.acquire()
-    try:
-        f = open(log_name,'a')
-        f.write('<p>'+str(number)+' '+url+'</br>')
-        f.write(result_str)
-        f.write('</p>')
-    finally:
-        # lock을 해제
-        lk.release()
+    while True:
+        # lock을 건다
+        acquired = lk.acquire()
+        try:
+            if acquired == True:
+                f = open(log_name,'a')
+                f.write('<p>'+str(number)+' '+url+'</br>')
+                f.write(result_str)
+                f.write('</p>')
+            else:
+                # lock을 실패할 경우 1초 멈춤
+                time.sleep(2.0)
+        except:
+            print("Error Occurred")
+        finally:
+            if acquired == True:
+                # lock을 해제
+                lk.release()
+                break
 
     f.close()
     conn.close()
@@ -71,14 +90,14 @@ if __name__ == '__main__':
     log_name = str(today.year) + '-' + str(today.month) + '-' + str(today.day) + '-' + str(today.hour) + '-' + str(today.minute)
     log_name = log_name + '.html'
     
-    fh = open('list_of_homepage.txt', 'r')
+    fh = open('list_of_homepage(origin).txt', 'r')
     ct=0
     while 1:
      ct=ct+1
      line = fh.readline()
      if not line : break
      urls = line
-     p = mp.Process(target=Scan_URL, args=(urls,ct,log_name,lock))  ## 다중 프로세
+     p = mp.Process(target=Scan_URL, args=(urls,ct,log_name,lock))  ## 다중 프로세스
      p.start()
 
     fh.close()
